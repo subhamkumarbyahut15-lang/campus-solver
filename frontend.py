@@ -8,7 +8,7 @@ load_dotenv()
 # ── Configuration ─────────────────────────────────────────────────────────────
 # During development in Codespaces, use localhost.
 # After deploying to Render, change this to your Render URL.
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+BACKEND_URL = os.getenv("BACKEND_URL", "https://campus-solver-api.onrender.com")
 
 SUBJECTS = [
     "General",
