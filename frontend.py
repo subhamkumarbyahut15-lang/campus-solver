@@ -218,6 +218,7 @@ with tab_insights:
 
 # ── TAB 4: Admin Hub ──────────────────────────────────────────────────────────
 # ── TAB 4: Admin Hub ──────────────────────────────────────────────────────────
+# ── TAB 4: Admin Hub ──────────────────────────────────────────────────────────
 with tab_admin:
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
     if not st.session_state.get("admin_auth"):
@@ -236,31 +237,67 @@ with tab_admin:
             st.rerun()
         
         st.divider()
+
+        # --- NEW SORTING & FILTERING FEATURE ---
+        st.markdown("#### Filter Work Queue")
+        f_col1, f_col2 = st.columns(2)
+        with f_col1:
+            # Add or remove departments here based on your backend logic
+            filter_dept = st.selectbox("Department", [
+                "All Departments", 
+                "Housekeeping Department", 
+                "Maintenance Department", 
+                "Security & Discipline Cell", 
+                "Academic Office", 
+                "Mess Committee"
+            ])
+        with f_col2:
+            filter_status = st.selectbox("Status", [
+                "All Statuses", 
+                "Submitted", 
+                "In Progress", 
+                "Resolved", 
+                "Rejected"
+            ])
+
+        # Build the query parameters based on user selection
+        api_params = {}
+        if filter_dept != "All Departments":
+            api_params["department"] = filter_dept
+        if filter_status != "All Statuses":
+            api_params["status"] = filter_status
+
+        # Fetch problems using the new filters
+        data, code = api_request("GET", "/admin/problems", params=api_params) 
+        # ---------------------------------------
         
-        # FIX: Removed params={"status": "All"} so the backend doesn't filter out real tickets
-        data, code = api_request("GET", "/admin/problems") 
-        
+        st.divider()
+
         if code == 200 and data.get("problems"):
+            st.caption(f"Showing {len(data['problems'])} ticket(s)")
             for p in data["problems"]:
-                with st.expander(f"{p['tracking_id']} - {p['department']} ({p['status']})"):
+                with st.expander(f"[{p['status'].upper()}] {p['tracking_id']} - {p.get('department', 'Unassigned')}"):
+                    st.write(f"**Reported by:** {p['student_name']}")
                     st.write(f"**Issue:** {p['description']}")
                     
-                    # Ensure the selectbox defaults to the current status from the database
+                    # Ensure the selectbox defaults to the current status
                     current_status = p.get("status", "Submitted")
                     status_options = ["Submitted", "In Progress", "Resolved", "Rejected"]
                     default_index = status_options.index(current_status) if current_status in status_options else 0
                     
                     new_status = st.selectbox(
-                        "Status", 
+                        "Update Status", 
                         status_options, 
                         index=default_index,
                         key=f"s_{p['id']}"
                     )
                     
                     note = st.text_input("Resolution Note", value=p.get("resolution", ""), key=f"n_{p['id']}")
-                    if st.button("Update Issue", key=f"btn_{p['id']}"):
+                    if st.button("Save Changes", key=f"btn_{p['id']}", type="primary"):
                         api_request("PUT", f"/admin/problem/{p['id']}", {"status": new_status, "resolution": note})
+                        st.success("Ticket updated!")
                         st.rerun()
         else:
-            st.write("No active issues.")
+            st.info("No active issues match this filter. Queue is clear!")
+            
     st.markdown("</div>", unsafe_allow_html=True)
