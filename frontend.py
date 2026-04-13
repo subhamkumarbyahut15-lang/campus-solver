@@ -498,17 +498,7 @@ if pg == "submit":
                   ✅ Complaint submitted and routed to <strong>{d['department']}</strong>.
                   {' &nbsp;🏥 <strong>Escalated to Warden due to medical nature.</strong>' if d.get('is_medical') else ''}
                 </div>
-                <div class="trk-grid">
-                  <div><div class="tg-lbl">AI Category</div><div class="tg-val">{CATEGORY_ICONS.get(d['category'],'')} {d['category']}</div></div>
-                  <div><div class="tg-lbl">Current Authority</div><div class="tg-val">{AUTHORITY_ICONS.get(d['current_authority'],'')} {d['current_authority']}</div></div>
-                </div>
-                <div class="tg-lbl" style="margin-bottom:5px">Escalation Level</div>
-                {escalation_ladder_html(lv)}
-                <div class="tg-lbl" style="margin-bottom:5px;margin-top:.75rem">Classification Confidence</div>
-                {cbar(d['confidence'])}
-                <hr class="div">
-                <p style="font-size:.76rem;color:var(--text-soft)">Use the <strong>Track Status</strong> tab to monitor progress. If marked resolved but not fixed — you can dispute it.</p>
-              </div>
+                
             </div>""", unsafe_allow_html=True)
 
             if st.button("← Submit Another Complaint"):
