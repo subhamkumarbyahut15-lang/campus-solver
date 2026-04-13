@@ -217,6 +217,7 @@ with tab_insights:
         st.markdown("</div>", unsafe_allow_html=True)
 
 # ── TAB 4: Admin Hub ──────────────────────────────────────────────────────────
+# ── TAB 4: Admin Hub ──────────────────────────────────────────────────────────
 with tab_admin:
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
     if not st.session_state.get("admin_auth"):
@@ -235,12 +236,27 @@ with tab_admin:
             st.rerun()
         
         st.divider()
-        data, code = api_request("GET", "/admin/problems", params={"status": "All"})
+        
+        # FIX: Removed params={"status": "All"} so the backend doesn't filter out real tickets
+        data, code = api_request("GET", "/admin/problems") 
+        
         if code == 200 and data.get("problems"):
             for p in data["problems"]:
                 with st.expander(f"{p['tracking_id']} - {p['department']} ({p['status']})"):
                     st.write(f"**Issue:** {p['description']}")
-                    new_status = st.selectbox("Status", ["Submitted", "In Progress", "Resolved", "Rejected"], key=f"s_{p['id']}")
+                    
+                    # Ensure the selectbox defaults to the current status from the database
+                    current_status = p.get("status", "Submitted")
+                    status_options = ["Submitted", "In Progress", "Resolved", "Rejected"]
+                    default_index = status_options.index(current_status) if current_status in status_options else 0
+                    
+                    new_status = st.selectbox(
+                        "Status", 
+                        status_options, 
+                        index=default_index,
+                        key=f"s_{p['id']}"
+                    )
+                    
                     note = st.text_input("Resolution Note", value=p.get("resolution", ""), key=f"n_{p['id']}")
                     if st.button("Update Issue", key=f"btn_{p['id']}"):
                         api_request("PUT", f"/admin/problem/{p['id']}", {"status": new_status, "resolution": note})
