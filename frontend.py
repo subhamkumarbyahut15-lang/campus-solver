@@ -240,10 +240,44 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stMain"],.main{
 .portal-footer{background:var(--navy);color:#475569;text-align:center;
   padding:1.4rem;font-size:.73rem;margin-top:3rem;letter-spacing:.02em}
 .portal-footer span{color:#94A3B8}
+
+/* ── TAB BUTTONS ─────────────────────────────────────── */
+/* Style ALL buttons that are direct children of the first horizontal block */
+section.main > div > div > div > div > div[data-testid="stHorizontalBlock"] .stButton > button,
+div[data-testid="stHorizontalBlock"] .stButton > button {
+  background: white !important;
+  color: #64748B !important;
+  border: none !important;
+  border-bottom: 3px solid transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: .8rem .4rem !important;
+  font-size: .78rem !important;
+  font-weight: 600 !important;
+  width: 100% !important;
+  transition: color .15s, border-color .15s !important;
+  font-family: 'DM Sans', sans-serif !important;
+  margin: 0 !important;
+}
+section.main > div > div > div > div > div[data-testid="stHorizontalBlock"] .stButton > button:hover,
+div[data-testid="stHorizontalBlock"] .stButton > button:hover {
+  color: #0B1E3F !important;
+  background: #F8FAFC !important;
+}
+/* Tab row container */
+div[data-testid="stHorizontalBlock"] {
+  background: white !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  gap: 0 !important;
+  padding: 0 1rem !important;
+  margin-bottom: 0 !important;
+}
 </style>
 <script>
 (function() {
   var doc = window.parent.document;
+
+  // 1. Inject Google Fonts
   if (!doc.getElementById('cg-fonts')) {
     var link = doc.createElement('link');
     link.id = 'cg-fonts';
@@ -251,14 +285,16 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stMain"],.main{
     link.href = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap';
     doc.head.appendChild(link);
   }
-  if (!doc.getElementById('cg-styles')) {
-    var style = document.querySelector('style');
-    if (style) {
-      var ps = doc.createElement('style');
-      ps.id = 'cg-styles';
-      ps.textContent = style.textContent;
-      doc.head.appendChild(ps);
-    }
+
+  // 2. Inject CSS into parent
+  var style = document.querySelector('style');
+  if (style) {
+    var existing = doc.getElementById('cg-styles');
+    if (existing) existing.remove();
+    var ps = doc.createElement('style');
+    ps.id = 'cg-styles';
+    ps.textContent = style.textContent;
+    doc.head.appendChild(ps);
   }
 })();
 </script>
@@ -375,26 +411,40 @@ tabs_def = [
     ("admin",     "🛠  Admin Panel"),
     ("stats",     "📊  Statistics"),
 ]
-pg       = st.session_state.page
-tab_html = '<div class="page-tabs">'
-for k, lbl in tabs_def:
-    ac = "active" if pg == k else ""
-    tab_html += f'<span class="ptab {ac}">{lbl}</span>'
-tab_html += "</div>"
-st.markdown(tab_html, unsafe_allow_html=True)
+pg = st.session_state.page
 
-btn_cols = st.columns(len(tabs_def))
+# ── Tab bar: plain st.button() calls — all styling via JS-injected CSS ───────
+active_idx = [k for k, _ in tabs_def].index(pg)
+tab_cols = st.columns(len(tabs_def))
 for i, (k, lbl) in enumerate(tabs_def):
-    with btn_cols[i]:
-        if st.button(lbl, key=f"tb_{k}"):
+    with tab_cols[i]:
+        if st.button(lbl, key=f"tb_{k}", use_container_width=True):
             st.session_state.page = k
             st.rerun()
-st.markdown("""<style>
-div[data-testid="stHorizontalBlock"]:first-of-type .stButton > button{
-  opacity:0!important;height:2px!important;padding:0!important;
-  min-height:0!important;margin-top:-34px!important;
-  border-radius:0!important;box-shadow:none!important}
-</style>""", unsafe_allow_html=True)
+
+# Highlight active tab with amber underline via JS (no <style> tag needed)
+_components.html(f"""
+<script>
+(function() {{
+  var doc = window.parent.document;
+  var activeIdx = {active_idx};
+  // Run after Streamlit has rendered the buttons
+  setTimeout(function() {{
+    var hblock = doc.querySelector('div[data-testid="stHorizontalBlock"]');
+    if (!hblock) return;
+    var btns = hblock.querySelectorAll('button');
+    btns.forEach(function(btn, i) {{
+      btn.style.borderBottom = '3px solid transparent';
+      btn.style.color = '#64748B';
+    }});
+    if (btns[activeIdx]) {{
+      btns[activeIdx].style.borderBottom = '3px solid #D97706';
+      btns[activeIdx].style.color = '#0B1E3F';
+    }}
+  }}, 100);
+}})();
+</script>
+""", height=0)
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  HERO
