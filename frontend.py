@@ -497,9 +497,9 @@ if pg == "submit":
                 <div class="alert a-ok" style="margin-bottom:.9rem">
                   ✅ Complaint submitted and routed to <strong>{d['department']}</strong>.
                   {' &nbsp;🏥 <strong>Escalated to Warden due to medical nature.</strong>' if d.get('is_medical') else ''}
-                </div>
                 
-            </div>""", unsafe_allow_html=True)
+                
+            """, unsafe_allow_html=True)
 
             if st.button("← Submit Another Complaint"):
                 st.session_state.submit_result = None
