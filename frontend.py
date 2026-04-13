@@ -39,10 +39,11 @@ st.set_page_config(
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  CSS
+#  CSS — injected via JS so Streamlit Cloud cannot strip the <style> tag
 # ══════════════════════════════════════════════════════════════════════════════
-st.markdown("""
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+import streamlit.components.v1 as _components
+
+_components.html("""
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -240,7 +241,28 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stMain"],.main{
   padding:1.4rem;font-size:.73rem;margin-top:3rem;letter-spacing:.02em}
 .portal-footer span{color:#94A3B8}
 </style>
-""", unsafe_allow_html=True)
+<script>
+(function() {
+  var doc = window.parent.document;
+  if (!doc.getElementById('cg-fonts')) {
+    var link = doc.createElement('link');
+    link.id = 'cg-fonts';
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap';
+    doc.head.appendChild(link);
+  }
+  if (!doc.getElementById('cg-styles')) {
+    var style = document.querySelector('style');
+    if (style) {
+      var ps = doc.createElement('style');
+      ps.id = 'cg-styles';
+      ps.textContent = style.textContent;
+      doc.head.appendChild(ps);
+    }
+  }
+})();
+</script>
+""", height=0)
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  STATE & HELPERS
