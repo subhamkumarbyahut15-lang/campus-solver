@@ -6,14 +6,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
-ADMIN_KEY = os.getenv("ADMIN_KEY", "admin123")
 
 # ── App Configuration (No Sidebar) ────────────────────────────────────────────
 st.set_page_config(
     page_title="Campus Command",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="collapsed" # Hides the sidebar for a web-app feel
+    initial_sidebar_state="collapsed" 
 )
 
 # ── Complete UI Overhaul (CSS) ────────────────────────────────────────────────
@@ -58,7 +57,7 @@ st.markdown("""
         border: 1px solid #f1f5f9;
         margin-bottom: 1rem;
     }
-    
+
     /* Make tabs look like a modern segmented control */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
@@ -108,12 +107,17 @@ def api_request(method, endpoint, payload=None, params=None):
     except Exception as e:
         return {"detail": "Backend Offline"}, 503
 
-# ── Top Hero Section (Information First) ──────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MAIN APPLICATION
+# ══════════════════════════════════════════════════════════════════════════════
+
 # Try to fetch global stats for the hero banner
 stats_data, code = api_request("GET", "/admin/stats")
 total_issues = stats_data.get("total", 0) if code == 200 else "--"
 resolved_issues = stats_data.get("by_status", {}).get("Resolved", 0) if code == 200 else "--"
 
+# ── Top Hero Section ──────────────────────────────────────────────────────────
 st.markdown(f"""
 <div class="hero-container">
     <div>
@@ -127,7 +131,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Reactive Navigation (Tabs instead of pages) ───────────────────────────────
+# ── Reactive Navigation ───────────────────────────────────────────────────────
 tab_report, tab_track, tab_insights, tab_admin = st.tabs([
     "🚀 Report Issue", 
     "🔍 Track Status", 
@@ -217,32 +221,42 @@ with tab_insights:
         st.markdown("</div>", unsafe_allow_html=True)
 
 # ── TAB 4: Admin Hub ──────────────────────────────────────────────────────────
-# ── TAB 4: Admin Hub ──────────────────────────────────────────────────────────
-# ── TAB 4: Admin Hub ──────────────────────────────────────────────────────────
 with tab_admin:
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-    if not st.session_state.get("admin_auth"):
+    
+    # Check if admin is authenticated
+    if not st.session_state.get("admin_auth", False):
         st.subheader("Restricted Access")
-        pwd = st.text_input("Administrator Password", type="password")
-        if st.button("Unlock Terminal"):
-            if pwd == ADMIN_KEY:
-                st.session_state["admin_auth"] = True
-                st.rerun()
-            else:
-                st.error("Access Denied.")
+        
+        # Center the login form nicely inside the tab
+        _, col_login, _ = st.columns([1, 2, 1])
+        with col_login:
+            with st.form("admin_login_form"):
+                email_input = st.text_input("Admin Email / Username")
+                password_input = st.text_input("Administrator Password", type="password")
+                login_submitted = st.form_submit_button("Unlock Terminal", type="primary", use_container_width=True)
+                
+                if login_submitted:
+                    if email_input.strip() == "iiitrreport" and password_input == "1234":
+                        st.session_state["admin_auth"] = True
+                        st.rerun()
+                    else:
+                        st.error("❌ Invalid credentials. Access Denied.")
     else:
-        st.success("Admin Terminal Active")
-        if st.button("Lock Terminal"):
-            st.session_state["admin_auth"] = False
-            st.rerun()
+        # Admin is logged in, show the dashboard
+        c_title, c_logout = st.columns([4, 1])
+        with c_title:
+            st.success("Admin Terminal Active")
+        with c_logout:
+            if st.button("🚪 Logout", use_container_width=True):
+                st.session_state["admin_auth"] = False
+                st.rerun()
         
         st.divider()
 
-        # --- NEW SORTING & FILTERING FEATURE ---
         st.markdown("#### Filter Work Queue")
         f_col1, f_col2 = st.columns(2)
         with f_col1:
-            # Add or remove departments here based on your backend logic
             filter_dept = st.selectbox("Department", [
                 "All Departments", 
                 "Housekeeping Department", 
@@ -260,16 +274,13 @@ with tab_admin:
                 "Rejected"
             ])
 
-        # Build the query parameters based on user selection
         api_params = {}
         if filter_dept != "All Departments":
             api_params["department"] = filter_dept
         if filter_status != "All Statuses":
             api_params["status"] = filter_status
 
-        # Fetch problems using the new filters
         data, code = api_request("GET", "/admin/problems", params=api_params) 
-        # ---------------------------------------
         
         st.divider()
 
@@ -280,7 +291,6 @@ with tab_admin:
                     st.write(f"**Reported by:** {p['student_name']}")
                     st.write(f"**Issue:** {p['description']}")
                     
-                    # Ensure the selectbox defaults to the current status
                     current_status = p.get("status", "Submitted")
                     status_options = ["Submitted", "In Progress", "Resolved", "Rejected"]
                     default_index = status_options.index(current_status) if current_status in status_options else 0
